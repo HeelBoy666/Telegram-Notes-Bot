@@ -1,3 +1,11 @@
+"""
+Модуль админ-панели
+Copyright (c) 2025 HeelBoy666
+Licensed under MIT License (see LICENSE file)
+
+Класс для управления административными функциями бота.
+"""
+
 import os
 import shutil
 import logging

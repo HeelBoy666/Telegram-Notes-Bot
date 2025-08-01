@@ -1,3 +1,11 @@
+"""
+Модуль клавиатур
+Copyright (c) 2025 HeelBoy666
+Licensed under MIT License (see LICENSE file)
+
+Функции для создания клавиатур и кнопок интерфейса.
+"""
+
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:

@@ -1,3 +1,11 @@
+"""
+Telegram-бот для заметок
+Copyright (c) 2025 HeelBoy666
+Licensed under MIT License (see LICENSE file)
+
+Основной файл бота с обработчиками команд и состояний.
+"""
+
 import asyncio
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.fsm.context import FSMContext

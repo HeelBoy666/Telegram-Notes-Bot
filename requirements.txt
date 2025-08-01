@@ -1,3 +1,7 @@
+# Telegram-бот для заметок
+# Copyright (c) 2025 HeelBoy666
+# Licensed under MIT License (see LICENSE file)
+#
 # pip install -r requirements.txt
 
 aiogram==3.4.1

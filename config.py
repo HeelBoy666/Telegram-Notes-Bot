@@ -1,3 +1,11 @@
+"""
+Конфигурация Telegram-бота
+Copyright (c) 2025 HeelBoy666
+Licensed under MIT License (see LICENSE file)
+
+Настройки и переменные окружения для бота.
+"""
+
 import os
 from dotenv import load_dotenv
 

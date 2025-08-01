@@ -1,3 +1,11 @@
+"""
+Модуль работы с базой данных
+Copyright (c) 2025 HeelBoy666
+Licensed under MIT License (see LICENSE file)
+
+Класс для работы с SQLite базой данных заметок и пользователей.
+"""
+
 import sqlite3
 from typing import List, Tuple, Optional
 from datetime import datetime, timezone
