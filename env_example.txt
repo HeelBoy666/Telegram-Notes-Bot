@@ -1,0 +1,4 @@
+# Токен вашего Telegram бота
+# Получите токен у @BotFather в Telegram
+BOT_TOKEN=
+ADMIN_ID=
