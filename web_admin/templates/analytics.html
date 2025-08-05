@@ -1,0 +1,899 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Заголовок -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-chart-line"></i> Аналитика и графики
+                        </h4>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" onclick="updateCharts('7d')">7 дней</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="updateCharts('30d')">30 дней</button>
+                            <button type="button" class="btn btn-outline-primary" onclick="updateCharts('90d')">90 дней</button>
+                        </div>
+                        <button class="btn btn-success ms-2" onclick="exportAnalytics()">
+                            <i class="fas fa-download"></i> Экспорт
+                        </button>
+                        <button class="btn btn-info ms-2" onclick="showFilters()">
+                            <i class="fas fa-filter"></i> Фильтры
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основные метрики -->
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h5>Новые пользователи</h5>
+                        <h3 id="newUsersCount">-</h3>
+                        <small id="newUsersChange">+0%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h5>Активные пользователи</h5>
+                        <h3 id="activeUsersCount">-</h3>
+                        <small id="activeUsersChange">+0%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5>Новые заметки</h5>
+                        <h3 id="newNotesCount">-</h3>
+                        <small id="newNotesChange">+0%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h5>Рефералы</h5>
+                        <h3 id="referralsCount">-</h3>
+                        <small id="referralsChange">+0%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Графики активности -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-area"></i> Активность пользователей
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activityChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- График рефералов -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie"></i> Топ рефереров
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="referralsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- График заметок -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar"></i> Статистика заметок
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="notesChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- График ролей пользователей -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-doughnut"></i> Распределение ролей
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="rolesChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Топ пользователей -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-trophy"></i> Топ активных пользователей
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="topUsersList">
+                    <!-- Список будет загружен через JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по времени -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock"></i> Активность по времени
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="timeChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Географическая статистика -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-globe"></i> Географическое распределение
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <canvas id="geoChart" height="200"></canvas>
+                    </div>
+                    <div class="col-md-4">
+                        <div id="geoStats">
+                            <!-- Статистика будет загружена через JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для детального просмотра -->
+<div class="modal fade" id="analyticsDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailModalTitle">Детальная аналитика</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="detailModalContent">
+                    <!-- Контент будет загружен через JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно с фильтрами -->
+<div class="modal fade" id="filtersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Фильтры аналитики</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filterRole" class="form-label">Роль пользователей</label>
+                            <select class="form-select" id="filterRole">
+                                <option value="">Все роли</option>
+                                <option value="user">Пользователи</option>
+                                <option value="admin">Admin</option>
+                                <option value="main_admin">Главные админы</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filterTimezone" class="form-label">Часовой пояс</label>
+                            <select class="form-select" id="filterTimezone">
+                                <option value="">Все часовые пояса</option>
+                                <option value="moscow">Москва (UTC+3)</option>
+                                <option value="ekaterinburg">Екатеринбург (UTC+5)</option>
+                                <option value="novosibirsk">Новосибирск (UTC+7)</option>
+                                <option value="vladivostok">Владивосток (UTC+10)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filterMinNotes" class="form-label">Мин. количество заметок</label>
+                            <input type="number" class="form-control" id="filterMinNotes" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filterMinReferrals" class="form-label">Мин. количество рефералов</label>
+                            <input type="number" class="form-control" id="filterMinReferrals" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filterStartDate" class="form-label">Дата начала</label>
+                            <input type="date" class="form-control" id="filterStartDate">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filterEndDate" class="form-label">Дата окончания</label>
+                            <input type="date" class="form-control" id="filterEndDate">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Дополнительные фильтры</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filterActiveOnly">
+                        <label class="form-check-label" for="filterActiveOnly">
+                            Только активные пользователи
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filterWithReferrals">
+                        <label class="form-check-label" for="filterWithReferrals">
+                            Только с рефералами
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filterRecentActivity">
+                        <label class="form-check-label" for="filterRecentActivity">
+                            Активность за последние 24 часа
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="clearFilters()">Очистить</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPeriod = '30d';
+let charts = {};
+let currentFilters = {};
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadAnalytics();
+    initCharts();
+    initNotifications();
+});
+
+// Инициализация уведомлений
+function initNotifications() {
+    // Проверяем важные метрики каждые 5 минут
+    setInterval(checkImportantMetrics, 5 * 60 * 1000);
+    
+    // Проверяем аномалии каждый час
+    setInterval(checkAnomalies, 60 * 60 * 1000);
+}
+
+// Проверка важных метрик
+function checkImportantMetrics() {
+    fetch(`/api/analytics/overview?period=1d`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const metrics = data.metrics;
+                
+                // Уведомление о резком росте пользователей
+                if (metrics.new_users_change > 50) {
+                    showNotification(`🚀 Резкий рост новых пользователей: +${metrics.new_users_change}%`, 'success');
+                }
+                
+                // Уведомление о падении активности
+                if (metrics.active_users_change < -20) {
+                    showNotification(`⚠️ Падение активности пользователей: ${metrics.active_users_change}%`, 'warning');
+                }
+                
+                // Уведомление о большом количестве заметок
+                if (metrics.new_notes > 100) {
+                    showNotification(`📝 Высокая активность: ${metrics.new_notes} новых заметок`, 'info');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка проверки метрик:', error);
+        });
+}
+
+// Проверка аномалий
+function checkAnomalies() {
+    fetch('/api/analytics/anomalies')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.anomalies.length > 0) {
+                data.anomalies.forEach(anomaly => {
+                    showNotification(`🚨 Аномалия: ${anomaly.description}`, 'error');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка проверки аномалий:', error);
+        });
+}
+
+// Показ фильтров
+function showFilters() {
+    const modal = new bootstrap.Modal(document.getElementById('filtersModal'));
+    modal.show();
+}
+
+// Применение фильтров
+function applyFilters() {
+    currentFilters = {
+        role: document.getElementById('filterRole').value,
+        timezone: document.getElementById('filterTimezone').value,
+        minNotes: document.getElementById('filterMinNotes').value,
+        minReferrals: document.getElementById('filterMinReferrals').value,
+        startDate: document.getElementById('filterStartDate').value,
+        endDate: document.getElementById('filterEndDate').value,
+        activeOnly: document.getElementById('filterActiveOnly').checked,
+        withReferrals: document.getElementById('filterWithReferrals').checked,
+        recentActivity: document.getElementById('filterRecentActivity').checked
+    };
+    
+    // Закрываем модальное окно
+    const modal = bootstrap.Modal.getInstance(document.getElementById('filtersModal'));
+    modal.hide();
+    
+    // Обновляем данные с фильтрами
+    loadAnalyticsWithFilters();
+    
+    showNotification('Фильтры применены', 'success');
+}
+
+// Очистка фильтров
+function clearFilters() {
+    document.getElementById('filterRole').value = '';
+    document.getElementById('filterTimezone').value = '';
+    document.getElementById('filterMinNotes').value = '0';
+    document.getElementById('filterMinReferrals').value = '0';
+    document.getElementById('filterStartDate').value = '';
+    document.getElementById('filterEndDate').value = '';
+    document.getElementById('filterActiveOnly').checked = false;
+    document.getElementById('filterWithReferrals').checked = false;
+    document.getElementById('filterRecentActivity').checked = false;
+    
+    currentFilters = {};
+    
+    // Обновляем данные без фильтров
+    loadAnalytics();
+    
+    showNotification('Фильтры очищены', 'info');
+}
+
+// Загрузка аналитики с фильтрами
+function loadAnalyticsWithFilters() {
+    const params = new URLSearchParams({
+        period: currentPeriod,
+        ...currentFilters
+    });
+    
+    fetch(`/api/analytics/overview?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMetrics(data.metrics);
+                updateCharts(data.charts);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки аналитики с фильтрами:', error);
+            showNotification('Ошибка загрузки данных', 'error');
+        });
+}
+
+// Обновление графиков с фильтрами
+function updateChartsWithFilters(period) {
+    currentPeriod = period;
+    
+    const params = new URLSearchParams({
+        period: period,
+        ...currentFilters
+    });
+    
+    fetch(`/api/analytics/charts?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateChartData(data.charts);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка обновления графиков с фильтрами:', error);
+            showNotification('Ошибка обновления графиков', 'error');
+        });
+}
+
+// Обновление данных графиков с поддержкой темной темы
+function updateChartData(charts) {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#ffffff' : '#212529';
+    const gridColor = isDark ? '#404040' : '#e9ecef';
+    
+    // Общие настройки для всех графиков
+    const commonOptions = {
+        plugins: {
+            legend: {
+                labels: {
+                    color: textColor
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: textColor },
+                grid: { color: gridColor }
+            },
+            y: {
+                ticks: { color: textColor },
+                grid: { color: gridColor }
+            }
+        }
+    };
+    
+    // Обновляем график активности
+    charts.activity.data.labels = charts.activity.labels;
+    charts.activity.data.datasets[0].data = charts.activity.new_users;
+    charts.activity.data.datasets[1].data = charts.activity.active_users;
+    charts.activity.options = { ...charts.activity.options, ...commonOptions };
+    charts.activity.update();
+
+    // Обновляем график рефералов
+    charts.referrals.data.labels = charts.referrals.labels;
+    charts.referrals.data.datasets[0].data = charts.referrals.data;
+    charts.referrals.options = { ...charts.referrals.options, ...commonOptions };
+    charts.referrals.update();
+
+    // Обновляем график заметок
+    charts.notes.data.labels = charts.notes.labels;
+    charts.notes.data.datasets[0].data = charts.notes.data;
+    charts.notes.options = { ...charts.notes.options, ...commonOptions };
+    charts.notes.update();
+
+    // Обновляем график ролей
+    charts.roles.data.datasets[0].data = charts.roles;
+    charts.roles.options = { ...charts.roles.options, ...commonOptions };
+    charts.roles.update();
+
+    // Обновляем график времени
+    charts.time.data.datasets[0].data = charts.time;
+    charts.time.options = { ...charts.time.options, ...commonOptions };
+    charts.time.update();
+
+    // Обновляем географический график
+    charts.geo.data.labels = charts.geo.labels;
+    charts.geo.data.datasets[0].data = charts.geo.data;
+    charts.geo.options = { ...charts.geo.options, ...commonOptions };
+    charts.geo.update();
+
+    // Обновляем топ пользователей
+    updateTopUsers(charts.top_users);
+    updateGeoStats(charts.geo_stats);
+}
+
+// Показ уведомления
+function showNotification(message, type = 'info') {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Добавляем на страницу
+    document.body.appendChild(notification);
+    
+    // Автоматически скрываем через 5 секунд
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Загрузка аналитики
+function loadAnalytics() {
+    fetch(`/api/analytics/overview?period=${currentPeriod}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMetrics(data.metrics);
+                updateCharts(data.charts);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки аналитики:', error);
+        });
+}
+
+// Обновление метрик
+function updateMetrics(metrics) {
+    document.getElementById('newUsersCount').textContent = metrics.new_users;
+    document.getElementById('newUsersChange').textContent = metrics.new_users_change + '%';
+    document.getElementById('activeUsersCount').textContent = metrics.active_users;
+    document.getElementById('activeUsersChange').textContent = metrics.active_users_change + '%';
+    document.getElementById('newNotesCount').textContent = metrics.new_notes;
+    document.getElementById('newNotesChange').textContent = metrics.new_notes_change + '%';
+    document.getElementById('referralsCount').textContent = metrics.referrals;
+    document.getElementById('referralsChange').textContent = metrics.referrals_change + '%';
+}
+
+// Инициализация графиков
+function initCharts() {
+    // График активности
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    charts.activity = new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Новые пользователи',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }, {
+                label: 'Активные пользователи',
+                data: [],
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // График рефералов
+    const referralsCtx = document.getElementById('referralsChart').getContext('2d');
+    charts.referrals = new Chart(referralsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // График заметок
+    const notesCtx = document.getElementById('notesChart').getContext('2d');
+    charts.notes = new Chart(notesCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Количество заметок',
+                data: [],
+                backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // График ролей
+    const rolesCtx = document.getElementById('rolesChart').getContext('2d');
+    charts.roles = new Chart(rolesCtx, {
+        type: 'pie',
+        data: {
+                                    labels: ['Пользователи', 'Admin', 'Boss'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // График времени
+    const timeCtx = document.getElementById('timeChart').getContext('2d');
+    charts.time = new Chart(timeCtx, {
+        type: 'line',
+        data: {
+            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+            datasets: [{
+                label: 'Активность',
+                data: [],
+                borderColor: 'rgb(153, 102, 255)',
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Географический график
+    const geoCtx = document.getElementById('geoChart').getContext('2d');
+    charts.geo = new Chart(geoCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Пользователи',
+                data: [],
+                backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                borderColor: 'rgb(75, 192, 192)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Обновление графиков
+function updateCharts(period) {
+    currentPeriod = period;
+    
+    fetch(`/api/analytics/charts?period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Обновляем график активности
+                charts.activity.data.labels = data.activity.labels;
+                charts.activity.data.datasets[0].data = data.activity.new_users;
+                charts.activity.data.datasets[1].data = data.activity.active_users;
+                charts.activity.update();
+
+                // Обновляем график рефералов
+                charts.referrals.data.labels = data.referrals.labels;
+                charts.referrals.data.datasets[0].data = data.referrals.data;
+                charts.referrals.update();
+
+                // Обновляем график заметок
+                charts.notes.data.labels = data.notes.labels;
+                charts.notes.data.datasets[0].data = data.notes.data;
+                charts.notes.update();
+
+                // Обновляем график ролей
+                charts.roles.data.datasets[0].data = data.roles;
+                charts.roles.update();
+
+                // Обновляем график времени
+                charts.time.data.datasets[0].data = data.time;
+                charts.time.update();
+
+                // Обновляем географический график
+                charts.geo.data.labels = data.geo.labels;
+                charts.geo.data.datasets[0].data = data.geo.data;
+                charts.geo.update();
+
+                // Обновляем топ пользователей
+                updateTopUsers(data.top_users);
+                updateGeoStats(data.geo_stats);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка обновления графиков:', error);
+        });
+}
+
+// Обновление топ пользователей
+function updateTopUsers(topUsers) {
+    const container = document.getElementById('topUsersList');
+    container.innerHTML = '';
+    
+    topUsers.forEach((user, index) => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+        userDiv.innerHTML = `
+            <div>
+                <span class="badge bg-primary me-2">${index + 1}</span>
+                <strong>${user.username}</strong>
+                <small class="text-muted d-block">${user.notes_count} заметок</small>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-success">${user.referrals_count} рефералов</span>
+            </div>
+        `;
+        container.appendChild(userDiv);
+    });
+}
+
+// Обновление географической статистики
+function updateGeoStats(geoStats) {
+    const container = document.getElementById('geoStats');
+    container.innerHTML = `
+        <h6>Статистика по регионам:</h6>
+        <div class="mb-2">
+            <strong>Всего стран:</strong> ${geoStats.total_countries}
+        </div>
+        <div class="mb-2">
+            <strong>Топ регион:</strong> ${geoStats.top_region}
+        </div>
+        <div class="mb-2">
+            <strong>Среднее на страну:</strong> ${geoStats.avg_per_country}
+        </div>
+    `;
+}
+
+// Экспорт аналитики
+function exportAnalytics() {
+    fetch(`/api/analytics/export?period=${currentPeriod}`)
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics_${currentPeriod}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Ошибка экспорта:', error);
+            showNotification('Ошибка экспорта аналитики', 'error');
+        });
+}
+
+// Показ детальной информации при клике на график
+function showChartDetails(chartType, data) {
+    const modal = new bootstrap.Modal(document.getElementById('analyticsDetailModal'));
+    const title = document.getElementById('detailModalTitle');
+    const content = document.getElementById('detailModalContent');
+    
+    title.textContent = `Детальная информация: ${chartType}`;
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-12">
+                <h6>Данные:</h6>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+}
+
+// Добавляем обработчики кликов на графики
+document.addEventListener('DOMContentLoaded', function() {
+    // График активности
+    document.getElementById('activityChart').addEventListener('click', function(e) {
+        const chart = charts.activity;
+        const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+        if (points.length) {
+            const firstPoint = points[0];
+            const label = chart.data.labels[firstPoint.index];
+            const data = chart.data.datasets[firstPoint.datasetIndex].data[firstPoint.index];
+            showChartDetails('Активность', { label, data });
+        }
+    });
+});
+</script>
+{% endblock %} 

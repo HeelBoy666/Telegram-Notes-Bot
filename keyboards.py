@@ -12,9 +12,9 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
     """Создание основной клавиатуры с кнопками для обычных пользователей"""
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📝 Добавить заметку")],
-            [KeyboardButton(text="📋 Показать заметки")],
-            [KeyboardButton(text="🗑 Удалить заметку")]
+            [KeyboardButton(text="📝 Добавить заметку"), KeyboardButton(text="📋 Показать заметки")],
+            [KeyboardButton(text="🗑 Удалить заметку")],
+            [KeyboardButton(text="👥 Реферальная система")]
         ],
         resize_keyboard=True,
         input_field_placeholder="Выберите действие"
@@ -25,12 +25,12 @@ def get_admin_keyboard() -> ReplyKeyboardMarkup:
     """Создание клавиатуры с админ-кнопками"""
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📝 Добавить заметку")],
-            [KeyboardButton(text="📋 Показать заметки")],
+            [KeyboardButton(text="📝 Добавить заметку"), KeyboardButton(text="📋 Показать заметки")],
             [KeyboardButton(text="🗑 Удалить заметку")],
             [KeyboardButton(text="🔧 Админ-панель")],
             [KeyboardButton(text="⏸️ Остановить бота"), KeyboardButton(text="▶️ Запустить бота")],
-            [KeyboardButton(text="👥 Список пользователей")]
+            [KeyboardButton(text="👥 Список пользователей")],
+            [KeyboardButton(text="👥 Реферальная система")]
         ],
         resize_keyboard=True,
         input_field_placeholder="Выберите действие"
@@ -95,6 +95,9 @@ def get_admin_panel_inline_keyboard(is_main_admin: bool = False) -> InlineKeyboa
         keyboard.append([
             InlineKeyboardButton(text="📋 Список администраторов", callback_data="admin_admins_list")
         ])
+        keyboard.append([
+            InlineKeyboardButton(text="🔧 Дебаг", callback_data="admin_debug_menu")
+        ])
     
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -108,6 +111,49 @@ def get_role_management_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+def get_admins_list_keyboard() -> InlineKeyboardMarkup:
+    """Создание инлайн-клавиатуры для списка администраторов"""
+    keyboard = [
+        [InlineKeyboardButton(text="🔙 Назад к управлению ролями", callback_data="admin_manage_roles")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_debug_menu_keyboard() -> InlineKeyboardMarkup:
+    """Создание инлайн-клавиатуры для дебаг меню"""
+    keyboard = [
+        [InlineKeyboardButton(text="🔍 Отладка username", callback_data="debug_usernames"),
+         InlineKeyboardButton(text="🔄 Обновить username", callback_data="debug_update_usernames")],
+        [InlineKeyboardButton(text="📊 Отладка рефералов", callback_data="debug_referrals")],
+        [InlineKeyboardButton(text="👥 Отладка пользователей", callback_data="debug_users")],
+        [InlineKeyboardButton(text="📋 События", callback_data="debug_events")],
+        [InlineKeyboardButton(text="🔧 Исправить рефералы", callback_data="debug_fix_referrals")],
+        [InlineKeyboardButton(text="🔙 Назад к админ-панели", callback_data="admin_panel_back")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_debug_function_keyboard() -> InlineKeyboardMarkup:
+    """Создание инлайн-клавиатуры для функций дебаг меню (только кнопка назад)"""
+    keyboard = [
+        [InlineKeyboardButton(text="🔙 Назад к дебаг меню", callback_data="admin_debug_menu")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_debug_users_keyboard() -> InlineKeyboardMarkup:
+    """Создание инлайн-клавиатуры для отладки пользователей (с кнопкой скачать)"""
+    keyboard = [
+        [InlineKeyboardButton(text="📥 Скачать данные", callback_data="debug_download_users")],
+        [InlineKeyboardButton(text="🔙 Назад к дебаг меню", callback_data="admin_debug_menu")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_debug_events_keyboard() -> InlineKeyboardMarkup:
+    """Создание инлайн-клавиатуры для отладки событий (с кнопкой скачать)"""
+    keyboard = [
+        [InlineKeyboardButton(text="📥 Скачать события", callback_data="debug_download_events")],
+        [InlineKeyboardButton(text="🔙 Назад к дебаг меню", callback_data="admin_debug_menu")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 def get_cancel_keyboard() -> ReplyKeyboardMarkup:
     """Создание клавиатуры с кнопкой отмены"""
     keyboard = ReplyKeyboardMarkup(
@@ -117,4 +163,17 @@ def get_cancel_keyboard() -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         input_field_placeholder="Введите текст заметки или нажмите Отмена"
     )
-    return keyboard 
+    return keyboard
+
+def get_referral_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton(text="🏆 Топ рефереров", callback_data="referral_top"),
+         InlineKeyboardButton(text="📤 Поделиться", callback_data="referral_share")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_referral_back_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="referral_back")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard) 

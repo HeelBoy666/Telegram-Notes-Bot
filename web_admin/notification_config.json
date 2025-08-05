@@ -1,0 +1,29 @@
+{
+  "email": {
+    "enabled": false,
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "username": "",
+    "password": "",
+    "from_email": "",
+    "to_emails": []
+  },
+  "telegram": {
+    "enabled": true,
+    "bot_token": "6972382751:AAEi92gMJEULF0BanCSD-wOPymmyY8TzvPo",
+    "chat_ids": [
+      "5133216282"
+    ]
+  },
+  "webhook": {
+    "enabled": false,
+    "url": "",
+    "headers": {}
+  },
+  "notifications": {
+    "critical_events": true,
+    "admin_actions": true,
+    "system_alerts": true,
+    "user_activity": false
+  }
+}

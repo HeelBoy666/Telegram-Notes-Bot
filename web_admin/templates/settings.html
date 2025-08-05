@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Заголовок -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-cog"></i> Настройки системы
+                </h4>
+                <p class="text-muted mb-0">Управление конфигурацией бота и системными параметрами</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основные настройки -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-robot"></i> Настройки бота
+                </h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="botToken" class="form-label">Токен бота</label>
+                        <input type="password" class="form-control" id="botToken" 
+                               placeholder="Введите токен бота" readonly>
+                        <div class="form-text">Токен бота скрыт для безопасности</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="adminId" class="form-label">ID главного администратора</label>
+                        <input type="number" class="form-control" id="adminId" 
+                               placeholder="ID главного админа" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="maxNotes" class="form-label">Максимум заметок на сообщение</label>
+                        <input type="number" class="form-control" id="maxNotes" 
+                               placeholder="Количество заметок" value="10">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Сохранить настройки
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Управление администраторами -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-shield"></i> Управление администраторами
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="newAdminId" class="form-label">Добавить администратора</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="newAdminId" 
+                               placeholder="ID пользователя">
+                        <button class="btn btn-success" type="button" onclick="addAdmin()">
+                            <i class="fas fa-plus"></i> Добавить
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="removeAdminId" class="form-label">Удалить администратора</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="removeAdminId" 
+                               placeholder="ID пользователя">
+                        <button class="btn btn-danger" type="button" onclick="removeAdmin()">
+                            <i class="fas fa-minus"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Список администраторов:</strong>
+                    <div id="adminsList" class="mt-2">
+                        <!-- Список будет загружен через JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Системные операции -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tools"></i> Системные операции
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-warning" onclick="updateUsernames()">
+                        <i class="fas fa-sync"></i> Обновить username
+                    </button>
+                    
+                    <button class="btn btn-info" onclick="fixReferrals()">
+                        <i class="fas fa-wrench"></i> Исправить рефералы
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="createUsernames()">
+                        <i class="fas fa-user-plus"></i> Создать username для всех
+                    </button>
+                    
+                    <button class="btn btn-primary" onclick="initBoss()">
+                        <i class="fas fa-crown"></i> Инициализировать главного админа
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Резервное копирование -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-database"></i> Резервное копирование
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="backupDatabase()">
+                        <i class="fas fa-download"></i> Создать резервную копию
+                    </button>
+                    
+                    <button class="btn btn-warning" onclick="restoreDatabase()">
+                        <i class="fas fa-upload"></i> Восстановить из резервной копии
+                    </button>
+                    
+                    <button class="btn btn-info" onclick="exportData()">
+                        <i class="fas fa-file-export"></i> Экспорт всех данных
+                    </button>
+                    
+                    <button class="btn btn-danger" onclick="clearDatabase()">
+                        <i class="fas fa-trash"></i> Очистить базу данных
+                    </button>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Внимание:</strong> Некоторые операции необратимы!
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Логи и мониторинг -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line"></i> Логи и мониторинг
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Статистика системы</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Размер базы данных:</span>
+                                <span id="dbSize">Загрузка...</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Время работы бота:</span>
+                                <span id="uptime">Загрузка...</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Последняя активность:</span>
+                                <span id="lastActivity">Загрузка...</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Быстрые действия</h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewLogs()">
+                                <i class="fas fa-file-alt"></i> Просмотр логов
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="systemInfo()">
+                                <i class="fas fa-info-circle"></i> Информация о системе
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="testConnection()">
+                                <i class="fas fa-network-wired"></i> Тест подключения
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для подтверждения -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение действия</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmButton">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Загрузка данных при открытии страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadSystemInfo();
+    loadAdminsList();
+});
+
+// Загрузка информации о системе
+function loadSystemInfo() {
+    fetch('/api/system/info')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('dbSize').textContent = data.db_size || 'Неизвестно';
+            document.getElementById('uptime').textContent = data.uptime || 'Неизвестно';
+            document.getElementById('lastActivity').textContent = data.last_activity || 'Неизвестно';
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки информации о системе:', error);
+        });
+}
+
+// Загрузка списка администраторов
+function loadAdminsList() {
+    fetch('/api/admins/list')
+        .then(response => response.json())
+        .then(data => {
+            const adminsList = document.getElementById('adminsList');
+            if (data.admins && data.admins.length > 0) {
+                adminsList.innerHTML = data.admins.map(admin => 
+                    `<div class="badge bg-primary me-1">${admin.username || admin.id}</div>`
+                ).join('');
+            } else {
+                adminsList.innerHTML = '<span class="text-muted">Нет администраторов</span>';
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки списка администраторов:', error);
+        });
+}
+
+// Добавление администратора
+function addAdmin() {
+    const adminId = document.getElementById('newAdminId').value;
+    if (!adminId) {
+        showNotification('Введите ID пользователя', 'warning');
+        return;
+    }
+    
+    fetch('/api/admins/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({user_id: adminId})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Администратор успешно добавлен', 'success');
+            document.getElementById('newAdminId').value = '';
+            loadAdminsList();
+        } else {
+            showNotification(data.message || 'Ошибка добавления администратора', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка добавления администратора', 'error');
+    });
+}
+
+// Удаление администратора
+function removeAdmin() {
+    const adminId = document.getElementById('removeAdminId').value;
+    if (!adminId) {
+        showNotification('Введите ID пользователя', 'warning');
+        return;
+    }
+    
+    showConfirmModal(
+        `Вы уверены, что хотите удалить администратора с ID ${adminId}?`,
+        () => {
+            fetch('/api/admins/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({user_id: adminId})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Администратор успешно удален', 'success');
+                    document.getElementById('removeAdminId').value = '';
+                    loadAdminsList();
+                } else {
+                    showNotification(data.message || 'Ошибка удаления администратора', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Ошибка удаления администратора', 'error');
+            });
+        }
+    );
+}
+
+// Системные операции
+function updateUsernames() {
+    showConfirmModal('Обновить username всех пользователей?', () => {
+        fetch('/api/system/update-usernames', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Username успешно обновлены', 'success');
+                } else {
+                    showNotification('Ошибка обновления username', 'error');
+                }
+            });
+    });
+}
+
+function fixReferrals() {
+    showConfirmModal('Исправить реферальные связи?', () => {
+        fetch('/api/system/fix-referrals', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Исправлено ${data.fixed_count} рефералов`, 'success');
+                } else {
+                    showNotification('Ошибка исправления рефералов', 'error');
+                }
+            });
+    });
+}
+
+function createUsernames() {
+    showConfirmModal('Создать username для всех пользователей?', () => {
+        fetch('/api/system/create-usernames', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Username созданы для всех пользователей', 'success');
+                } else {
+                    showNotification('Ошибка создания username', 'error');
+                }
+            });
+    });
+}
+
+function initBoss() {
+    showConfirmModal('Инициализировать главного администратора?', () => {
+        fetch('/api/system/init-boss', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Главный администратор инициализирован', 'success');
+                } else {
+                    showNotification('Ошибка инициализации', 'error');
+                }
+            });
+    });
+}
+
+// Резервное копирование
+function backupDatabase() {
+    fetch('/api/system/backup', {method: 'POST'})
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_${new Date().toISOString().split('T')[0]}.db`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showNotification('Резервная копия создана', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка создания резервной копии', 'error');
+        });
+}
+
+function clearDatabase() {
+    showConfirmModal(
+        'ВНИМАНИЕ! Это действие удалит ВСЕ данные из базы данных. Это необратимо! Продолжить?',
+        () => {
+            fetch('/api/system/clear-database', {method: 'POST'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('База данных очищена', 'success');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showNotification('Ошибка очистки базы данных', 'error');
+                    }
+                });
+        }
+    );
+}
+
+// Показ модального окна подтверждения
+function showConfirmModal(message, callback) {
+    document.getElementById('confirmMessage').textContent = message;
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    
+    document.getElementById('confirmButton').onclick = function() {
+        modal.hide();
+        callback();
+    };
+    
+    modal.show();
+}
+
+// Дополнительные функции
+function viewLogs() {
+    window.open('/api/system/logs', '_blank');
+}
+
+function systemInfo() {
+    fetch('/api/system/info')
+        .then(response => response.json())
+        .then(data => {
+            alert(`Информация о системе:\n\nРазмер БД: ${data.db_size}\nВремя работы: ${data.uptime}\nПоследняя активность: ${data.last_activity}`);
+        });
+}
+
+function testConnection() {
+    fetch('/api/system/test-connection')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Подключение к базе данных успешно', 'success');
+            } else {
+                showNotification('Ошибка подключения к базе данных', 'error');
+            }
+        });
+}
+</script>
+{% endblock %} 

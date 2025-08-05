@@ -175,37 +175,41 @@ class AdminPanel:
             return False, "Доступ запрещен. Только администратор может выполнить эту команду.", None
         
         try:
-            admins, regular_users = self.db.get_users_with_admin_separation(admin_id)
+            admins, regular_users = self.db.get_users_with_referral_info(admin_id)
             
             # Объединение пользователей
             all_users = []
             
             # Главный админ
             main_admin_found = False
-            for user_id, notes_count in admins:
+            for user_id, notes_count, total_referrals, active_referrals in admins:
                 if user_id == admin_id:
-                    all_users.append((user_id, notes_count, "main_admin"))
+                    all_users.append((user_id, notes_count, "main_admin", total_referrals, active_referrals))
                     main_admin_found = True
                     break
             
             # Остальные админы
-            for user_id, notes_count in admins:
+            for user_id, notes_count, total_referrals, active_referrals in admins:
                 if user_id != admin_id:
-                    all_users.append((user_id, notes_count, "admin"))
+                    all_users.append((user_id, notes_count, "admin", total_referrals, active_referrals))
             
             # Обычные пользователи
-            for user_id, notes_count in regular_users:
-                all_users.append((user_id, notes_count, "user"))
+            for user_id, notes_count, total_referrals, active_referrals in regular_users:
+                all_users.append((user_id, notes_count, "user", total_referrals, active_referrals))
             
             # Главный админ
             if not main_admin_found:
-                # Количество заметок
+                # Количество заметок и рефералов
                 main_admin_notes = 0
-                for user_id, notes_count in admins + regular_users:
+                main_admin_total_refs = 0
+                main_admin_active_refs = 0
+                for user_id, notes_count, total_referrals, active_referrals in admins + regular_users:
                     if user_id == admin_id:
                         main_admin_notes = notes_count
+                        main_admin_total_refs = total_referrals
+                        main_admin_active_refs = active_referrals
                         break
-                all_users.insert(0, (admin_id, main_admin_notes, "main_admin"))
+                all_users.insert(0, (admin_id, main_admin_notes, "main_admin", main_admin_total_refs, main_admin_active_refs))
             
             # Пагинация
             total_users = len(all_users)

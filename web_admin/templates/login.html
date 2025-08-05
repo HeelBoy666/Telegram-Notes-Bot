@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Вход - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4><i class="fas fa-robot"></i> Админ-панель</h4>
+                    <p class="mb-0">Вход в систему управления</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="user_id" class="form-label">
+                                <i class="fas fa-user"></i> ID пользователя Telegram
+                            </label>
+                            <input type="number" class="form-control" id="user_id" name="user_id" 
+                                   placeholder="Введите ваш Telegram ID" required>
+                            <div class="form-text">
+                                Узнать ID можно у бота @userinfobot
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock"></i> Пароль
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Введите пароль" required>
+                            <div class="form-text">
+                                Пароль для доступа к админ-панели
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt"></i> Войти
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted">
+                        Доступ только для администраторов бота
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 12px;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+</style>
+{% endblock %} 

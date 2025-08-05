@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}События - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Заголовок и фильтры -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-list"></i> Система событий
+                        </h4>
+                    </div>
+                    <div class="col-md-6">
+                        <form class="d-flex" method="GET">
+                            <select class="form-select me-2" name="type">
+                                <option value="">Все типы</option>
+                                <option value="BOT_START" {% if filters.type == 'BOT_START' %}selected{% endif %}>Запуск бота</option>
+                                <option value="BOT_STOP" {% if filters.type == 'BOT_STOP' %}selected{% endif %}>Остановка бота</option>
+                                <option value="NOTE_ADDED" {% if filters.type == 'NOTE_ADDED' %}selected{% endif %}>Добавление заметки</option>
+                                <option value="NOTE_DELETED" {% if filters.type == 'NOTE_DELETED' %}selected{% endif %}>Удаление заметки</option>
+                                <option value="REFERRAL_JOINED" {% if filters.type == 'REFERRAL_JOINED' %}selected{% endif %}>Реферал присоединился</option>
+                                <option value="ROLE_GRANTED" {% if filters.type == 'ROLE_GRANTED' %}selected{% endif %}>Выдача роли</option>
+                                <option value="ROLE_REVOKED" {% if filters.type == 'ROLE_REVOKED' %}selected{% endif %}>Снятие роли</option>
+                            </select>
+                            <select class="form-select me-2" name="severity">
+                                <option value="">Все уровни</option>
+                                <option value="info" {% if filters.severity == 'info' %}selected{% endif %}>Информация</option>
+                                <option value="warning" {% if filters.severity == 'warning' %}selected{% endif %}>Предупреждение</option>
+                                <option value="error" {% if filters.severity == 'error' %}selected{% endif %}>Ошибка</option>
+                                <option value="critical" {% if filters.severity == 'critical' %}selected{% endif %}>Критично</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Фильтр
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика событий -->
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h5>Всего событий</h5>
+                        <h3>{{ pagination.total }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5>Информация</h5>
+                        <h3>{{ events|selectattr('3', 'equalto', 'info')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h5>Предупреждения</h5>
+                        <h3>{{ events|selectattr('3', 'equalto', 'warning')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <h5>Ошибки</h5>
+                        <h3>{{ events|selectattr('3', 'equalto', 'error')|list|length + events|selectattr('3', 'equalto', 'critical')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица событий -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history"></i> Лог событий
+                        </h5>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-success" onclick="exportData('events')">
+                            <i class="fas fa-download"></i> Экспорт
+                        </button>
+                        <button class="btn btn-warning" onclick="clearEvents()">
+                            <i class="fas fa-trash"></i> Очистить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if events %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="eventsTable">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Тип</th>
+                                <th>Описание</th>
+                                <th>Пользователь</th>
+                                <th>Важность</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                            <tr>
+                                <td>
+                                    <small class="text-muted">{{ event[4] }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ event[0] }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 300px;" 
+                                          title="{{ event[1] }}">
+                                        {{ event[1] }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if event[2] %}
+                                        <code>{{ event[2] }}</code>
+                                    {% else %}
+                                        <span class="text-muted">Система</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event[3] == 'info' %}
+                                        <span class="badge bg-info">ℹ️ Информация</span>
+                                    {% elif event[3] == 'warning' %}
+                                        <span class="badge bg-warning">⚠️ Предупреждение</span>
+                                    {% elif event[3] == 'error' %}
+                                        <span class="badge bg-danger">❌ Ошибка</span>
+                                    {% elif event[3] == 'critical' %}
+                                        <span class="badge bg-dark">🚨 Критично</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ event[3] }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="viewEventDetails('{{ event[0] }}', '{{ event[1] }}', '{{ event[2] }}', '{{ event[3] }}', '{{ event[4] }}')"
+                                            data-bs-toggle="tooltip" title="Просмотр деталей">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Пагинация -->
+                {% if pagination.pages > 1 %}
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.page - 1 }}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Предыдущая
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for p in range(1, pagination.pages + 1) %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="?page={{ p }}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}">
+                                {{ p }}
+                            </a>
+                        </li>
+                        {% endfor %}
+
+                        {% if pagination.page < pagination.pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.page + 1 }}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}">
+                                Следующая <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>События не найдены</p>
+                    {% if filters.type or filters.severity %}
+                    <p>Попробуйте изменить параметры фильтрации</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для деталей события -->
+<div class="modal fade" id="eventDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Детали события</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Тип события:</strong>
+                        <p id="eventType"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Важность:</strong>
+                        <p id="eventSeverity"></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Пользователь:</strong>
+                        <p id="eventUser"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Время:</strong>
+                        <p id="eventTime"></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <strong>Описание:</strong>
+                        <p id="eventDescription"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Инициализация тултипов
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Экспорт данных событий
+function exportData(type) {
+    if (type === 'events') {
+        const currentUrl = new URL(window.location);
+        currentUrl.pathname = '/api/events/export';
+        window.location.href = currentUrl.toString();
+    }
+}
+
+// Очистка событий
+function clearEvents() {
+    if (confirm('Вы уверены, что хотите очистить все события? Это действие нельзя отменить.')) {
+        fetch('/api/events/clear', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('События успешно очищены', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification('Ошибка при очистке событий', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка при очистке событий', 'error');
+        });
+    }
+}
+
+// Просмотр деталей события
+function viewEventDetails(type, description, user, severity, time) {
+    document.getElementById('eventType').textContent = type;
+    document.getElementById('eventDescription').textContent = description;
+    document.getElementById('eventUser').textContent = user || 'Система';
+    document.getElementById('eventTime').textContent = time;
+    
+    // Устанавливаем цвет важности
+    const severityElement = document.getElementById('eventSeverity');
+    severityElement.textContent = severity;
+    
+    if (severity === 'info') {
+        severityElement.innerHTML = '<span class="badge bg-info">ℹ️ Информация</span>';
+    } else if (severity === 'warning') {
+        severityElement.innerHTML = '<span class="badge bg-warning">⚠️ Предупреждение</span>';
+    } else if (severity === 'error') {
+        severityElement.innerHTML = '<span class="badge bg-danger">❌ Ошибка</span>';
+    } else if (severity === 'critical') {
+        severityElement.innerHTML = '<span class="badge bg-dark">🚨 Критично</span>';
+    } else {
+        severityElement.innerHTML = '<span class="badge bg-secondary">' + severity + '</span>';
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
+    modal.show();
+}
+</script>
+{% endblock %} 

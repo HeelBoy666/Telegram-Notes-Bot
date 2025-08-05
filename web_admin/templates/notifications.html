@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}Уведомления - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Заголовок -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-bell"></i> Настройки уведомлений
+                </h4>
+                <p class="text-muted mb-0">Настройка системы уведомлений для мониторинга событий</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email уведомления -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-envelope"></i> Email уведомления
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="emailForm">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="emailEnabled">
+                        <label class="form-check-label" for="emailEnabled">
+                            Включить email уведомления
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="smtpServer" class="form-label">SMTP сервер</label>
+                        <input type="text" class="form-control" id="smtpServer" placeholder="smtp.gmail.com">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="smtpPort" class="form-label">SMTP порт</label>
+                        <input type="number" class="form-control" id="smtpPort" placeholder="587">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emailUsername" class="form-label">Email пользователя</label>
+                        <input type="email" class="form-control" id="emailUsername" placeholder="user@gmail.com">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="emailPassword" class="form-label">Пароль приложения</label>
+                        <input type="password" class="form-control" id="emailPassword" placeholder="Пароль приложения">
+                        <div class="form-text">Для Gmail используйте пароль приложения</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fromEmail" class="form-label">Email отправителя</label>
+                        <input type="email" class="form-control" id="fromEmail" placeholder="noreply@example.com">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="toEmails" class="form-label">Email получателей</label>
+                        <textarea class="form-control" id="toEmails" rows="3" placeholder="admin@example.com&#10;support@example.com"></textarea>
+                        <div class="form-text">По одному email на строку</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="saveEmailConfig()">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="testEmail()">
+                            <i class="fas fa-paper-plane"></i> Тест
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram уведомления -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fab fa-telegram"></i> Telegram уведомления
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="telegramForm">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="telegramEnabled">
+                        <label class="form-check-label" for="telegramEnabled">
+                            Включить Telegram уведомления
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="botToken" class="form-label">Токен бота</label>
+                        <input type="text" class="form-control" id="botToken" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                        <div class="form-text">Получите у @BotFather</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="chatIds" class="form-label">ID чатов</label>
+                        <textarea class="form-control" id="chatIds" rows="3" placeholder="123456789&#10;-987654321"></textarea>
+                        <div class="form-text">По одному ID на строку. Для получения ID используйте @userinfobot</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="saveTelegramConfig()">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="testTelegram()">
+                            <i class="fab fa-telegram"></i> Тест
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Webhook уведомления -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-link"></i> Webhook уведомления
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="webhookForm">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="webhookEnabled">
+                        <label class="form-check-label" for="webhookEnabled">
+                            Включить Webhook уведомления
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="webhookUrl" class="form-label">Webhook URL</label>
+                        <input type="url" class="form-control" id="webhookUrl" placeholder="https://example.com/webhook">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="webhookHeaders" class="form-label">Заголовки (JSON)</label>
+                        <textarea class="form-control" id="webhookHeaders" rows="3" placeholder='{"Authorization": "Bearer token"}'></textarea>
+                        <div class="form-text">Дополнительные заголовки в формате JSON</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="saveWebhookConfig()">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="testWebhook()">
+                            <i class="fas fa-link"></i> Тест
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Настройки уведомлений -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog"></i> Настройки уведомлений
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="notificationsForm">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="criticalEvents">
+                        <label class="form-check-label" for="criticalEvents">
+                            Критические события
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="adminActions">
+                        <label class="form-check-label" for="adminActions">
+                            Действия администраторов
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="systemAlerts">
+                        <label class="form-check-label" for="systemAlerts">
+                            Системные алерты
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="userActivity">
+                        <label class="form-check-label" for="userActivity">
+                            Активность пользователей
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-primary" onclick="saveNotificationsConfig()">
+                            <i class="fas fa-save"></i> Сохранить настройки
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- История уведомлений -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> История уведомлений
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="notificationsTable">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Заголовок</th>
+                                <th>Тип</th>
+                                <th>Приоритет</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notificationsHistory">
+                            <!-- История будет загружена через JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Загрузка конфигурации при открытии страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotificationConfig();
+    loadNotificationsHistory();
+});
+
+// Загрузка конфигурации уведомлений
+function loadNotificationConfig() {
+    fetch('/api/notifications/config')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const config = data.config;
+                
+                // Email настройки
+                document.getElementById('emailEnabled').checked = config.email.enabled;
+                document.getElementById('smtpServer').value = config.email.smtp_server;
+                document.getElementById('smtpPort').value = config.email.smtp_port;
+                document.getElementById('emailUsername').value = config.email.username;
+                document.getElementById('emailPassword').value = config.email.password;
+                document.getElementById('fromEmail').value = config.email.from_email;
+                document.getElementById('toEmails').value = config.email.to_emails.join('\n');
+                
+                // Telegram настройки
+                document.getElementById('telegramEnabled').checked = config.telegram.enabled;
+                document.getElementById('botToken').value = config.telegram.bot_token;
+                document.getElementById('chatIds').value = config.telegram.chat_ids.join('\n');
+                
+                // Webhook настройки
+                document.getElementById('webhookEnabled').checked = config.webhook.enabled;
+                document.getElementById('webhookUrl').value = config.webhook.url;
+                document.getElementById('webhookHeaders').value = JSON.stringify(config.webhook.headers, null, 2);
+                
+                // Настройки уведомлений
+                document.getElementById('criticalEvents').checked = config.notifications.critical_events;
+                document.getElementById('adminActions').checked = config.notifications.admin_actions;
+                document.getElementById('systemAlerts').checked = config.notifications.system_alerts;
+                document.getElementById('userActivity').checked = config.notifications.user_activity;
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки конфигурации:', error);
+            showNotification('Ошибка загрузки конфигурации', 'error');
+        });
+}
+
+// Сохранение email конфигурации
+function saveEmailConfig() {
+    const config = {
+        enabled: document.getElementById('emailEnabled').checked,
+        smtp_server: document.getElementById('smtpServer').value,
+        smtp_port: parseInt(document.getElementById('smtpPort').value),
+        username: document.getElementById('emailUsername').value,
+        password: document.getElementById('emailPassword').value,
+        from_email: document.getElementById('fromEmail').value,
+        to_emails: document.getElementById('toEmails').value.split('\n').filter(email => email.trim())
+    };
+    
+    fetch('/api/notifications/config/email', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Email конфигурация сохранена', 'success');
+        } else {
+            showNotification(data.message || 'Ошибка сохранения', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сохранения', 'error');
+    });
+}
+
+// Сохранение Telegram конфигурации
+function saveTelegramConfig() {
+    const config = {
+        enabled: document.getElementById('telegramEnabled').checked,
+        bot_token: document.getElementById('botToken').value,
+        chat_ids: document.getElementById('chatIds').value.split('\n').filter(id => id.trim())
+    };
+    
+    fetch('/api/notifications/config/telegram', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Telegram конфигурация сохранена', 'success');
+        } else {
+            showNotification(data.message || 'Ошибка сохранения', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сохранения', 'error');
+    });
+}
+
+// Сохранение Webhook конфигурации
+function saveWebhookConfig() {
+    let headers = {};
+    try {
+        headers = JSON.parse(document.getElementById('webhookHeaders').value);
+    } catch (e) {
+        showNotification('Ошибка в формате JSON заголовков', 'error');
+        return;
+    }
+    
+    const config = {
+        enabled: document.getElementById('webhookEnabled').checked,
+        url: document.getElementById('webhookUrl').value,
+        headers: headers
+    };
+    
+    fetch('/api/notifications/config/webhook', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Webhook конфигурация сохранена', 'success');
+        } else {
+            showNotification(data.message || 'Ошибка сохранения', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сохранения', 'error');
+    });
+}
+
+// Сохранение настроек уведомлений
+function saveNotificationsConfig() {
+    const config = {
+        critical_events: document.getElementById('criticalEvents').checked,
+        admin_actions: document.getElementById('adminActions').checked,
+        system_alerts: document.getElementById('systemAlerts').checked,
+        user_activity: document.getElementById('userActivity').checked
+    };
+    
+    fetch('/api/notifications/config/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Настройки уведомлений сохранены', 'success');
+        } else {
+            showNotification(data.message || 'Ошибка сохранения', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сохранения', 'error');
+    });
+}
+
+// Тестирование уведомлений
+function testEmail() {
+    fetch('/api/notifications/test/email', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Тестовое email уведомление отправлено', 'success');
+            } else {
+                showNotification(data.message || 'Ошибка отправки', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка отправки', 'error');
+        });
+}
+
+function testTelegram() {
+    fetch('/api/notifications/test/telegram', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Тестовое Telegram уведомление отправлено', 'success');
+            } else {
+                showNotification(data.message || 'Ошибка отправки', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка отправки', 'error');
+        });
+}
+
+function testWebhook() {
+    fetch('/api/notifications/test/webhook', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Тестовое Webhook уведомление отправлено', 'success');
+            } else {
+                showNotification(data.message || 'Ошибка отправки', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка отправки', 'error');
+        });
+}
+
+// Загрузка истории уведомлений
+function loadNotificationsHistory() {
+    fetch('/api/notifications/history')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const tbody = document.getElementById('notificationsHistory');
+                tbody.innerHTML = '';
+                
+                data.history.forEach(notification => {
+                    const row = document.createElement('tr');
+                    const timestamp = new Date(notification.timestamp).toLocaleString('ru-RU');
+                    const statusIcon = notification.success ? '✅' : '❌';
+                    
+                    row.innerHTML = `
+                        <td><small class="text-muted">${timestamp}</small></td>
+                        <td>${notification.title}</td>
+                        <td><span class="badge bg-secondary">${notification.type}</span></td>
+                        <td><span class="badge bg-${getPriorityColor(notification.priority)}">${notification.priority}</span></td>
+                        <td>${statusIcon}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки истории:', error);
+        });
+}
+
+// Получение цвета для приоритета
+function getPriorityColor(priority) {
+    switch (priority) {
+        case 'high': return 'danger';
+        case 'medium': return 'warning';
+        case 'low': return 'info';
+        default: return 'secondary';
+    }
+}
+</script>
+{% endblock %} 

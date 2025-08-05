@@ -1,0 +1,743 @@
+{% extends "base.html" %}
+
+{% block title %}Пользователи - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Заголовок и поиск -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-users"></i> Управление пользователями
+                        </h4>
+                    </div>
+                    <div class="col-md-6">
+                        <form class="d-flex" method="GET">
+                            <input type="text" class="form-control me-2" name="search" 
+                                   placeholder="Поиск по ID или username..." value="{{ search }}">
+                            <select class="form-select me-2" name="role">
+                                <option value="">Все роли</option>
+                                <option value="user" {% if selected_role == 'user' %}selected{% endif %}>Пользователи</option>
+                                <option value="admin" {% if selected_role == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="main_admin" {% if selected_role == 'main_admin' %}selected{% endif %}>Главные админы</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика пользователей -->
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h5>Всего пользователей</h5>
+                        <h3>{{ stats.total_users }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h5>Активных сегодня</h5>
+                        <h3>{{ stats.active_today }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5>Новых за неделю</h5>
+                        <h3>{{ stats.new_week }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h5>С рефералами</h5>
+                        <h3>{{ stats.with_referrals }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Массовые операции -->
+    {% if current_user.role == 'main_admin' %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tools"></i> Массовые операции
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-success w-100" onclick="bulkAction('grant_admin')">
+                            <i class="fas fa-user-shield"></i> Сделать админами
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-warning w-100" onclick="bulkAction('revoke_admin')">
+                            <i class="fas fa-user"></i> Убрать админов
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-danger w-100" onclick="bulkAction('block')">
+                            <i class="fas fa-ban"></i> Заблокировать
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="bulkAction('unblock')">
+                            <i class="fas fa-check"></i> Разблокировать
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary w-100" onclick="exportUsers()">
+                            <i class="fas fa-download"></i> Экспорт
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="importUsers()">
+                            <i class="fas fa-upload"></i> Импорт
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-dark w-100" onclick="createUserGroup()">
+                            <i class="fas fa-layer-group"></i> Создать группу
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="viewUserHistory()">
+                            <i class="fas fa-history"></i> История действий
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Таблица пользователей -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list"></i> Список пользователей
+                        </h5>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="badge bg-secondary me-2">
+                            Показано: {{ pagination.total }} из {{ stats.total_users }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers()">
+                                </th>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Роль</th>
+                                <th>Заметки</th>
+                                <th>Рефералы</th>
+                                <th>Дата регистрации</th>
+                                <th>Последняя активность</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="user-checkbox" value="{{ user[0] }}">
+                                </td>
+                                <td>
+                                    <code>{{ user[0] }}</code>
+                                </td>
+                                <td>
+                                    <a href="#" onclick="viewUserDetails('{{ user[0] }}')">
+                                        {{ user[3] or ("user" + user[0]|string) }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if user[2] == 'main_admin' %}
+                                        <span class="badge bg-danger">Boss</span>
+                                    {% elif user[2] == 'admin' %}
+                                        <span class="badge bg-warning">Admin</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Пользователь</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ user[1] }}</span>
+                                </td>
+                                <td>
+                                    {% if user[4] %}
+                                        <span class="badge bg-success">{{ user[4] }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ user[5] or 'Неизвестно' }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ user[6] or 'Неизвестно' }}</small>
+                                </td>
+                                <td>
+                                    {% if user[7] %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Заблокирован</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                onclick="viewUserDetails('{{ user[0] }}')"
+                                                data-bs-toggle="tooltip" title="Детали">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                                onclick="editUser('{{ user[0] }}')"
+                                                data-bs-toggle="tooltip" title="Редактировать">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% if current_user.role == 'main_admin' and user[2] != 'main_admin' %}
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                onclick="toggleUserRole('{{ user[0] }}', '{{ user[2] }}')"
+                                                data-bs-toggle="tooltip" title="Изменить роль">
+                                            <i class="fas fa-user-shield"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-{% if user[7] %}success{% else %}danger{% endif %}" 
+                                                onclick="toggleUserStatus('{{ user[0] }}', '{{ user[7] }}')"
+                                                data-bs-toggle="tooltip" title="{% if user[7] %}Заблокировать{% else %}Разблокировать{% endif %}">
+                                            <i class="fas fa-{% if user[7] %}ban{% else %}check{% endif %}"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Пагинация -->
+                {% if pagination.pages > 1 %}
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.page - 1 }}{% if search %}&search={{ search }}{% endif %}{% if selected_role %}&role={{ selected_role }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Предыдущая
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for p in range(1, pagination.pages + 1) %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}{% if selected_role %}&role={{ selected_role }}{% endif %}">
+                                {{ p }}
+                            </a>
+                        </li>
+                        {% endfor %}
+
+                        {% if pagination.page < pagination.pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.page + 1 }}{% if search %}&search={{ search }}{% endif %}{% if selected_role %}&role={{ selected_role }}{% endif %}">
+                                Следующая <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-users fa-3x mb-3"></i>
+                    <p>Пользователи не найдены</p>
+                    {% if search or selected_role %}
+                    <p>Попробуйте изменить параметры поиска</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для деталей пользователя -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Детали пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="userDetailsContent">
+                    <!-- Контент будет загружен через JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования пользователя -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+                <div class="mb-3">
+                    <label for="editUsername" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="editUsername">
+                </div>
+                <div class="mb-3">
+                    <label for="editRole" class="form-label">Роль</label>
+                    <select class="form-select" id="editRole">
+                        <option value="user">Пользователь</option>
+                        <option value="admin">Admin</option>
+                        <option value="main_admin">Boss</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="editStatus" class="form-label">Статус</label>
+                    <select class="form-select" id="editStatus">
+                        <option value="1">Активен</option>
+                        <option value="0">Заблокирован</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для импорта пользователей -->
+<div class="modal fade" id="importUsersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Импорт пользователей</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="importFile" class="form-label">CSV файл</label>
+                    <input type="file" class="form-control" id="importFile" accept=".csv">
+                    <div class="form-text">Формат: ID,Username,Role,Status</div>
+                </div>
+                <div class="mb-3">
+                    <label for="importOptions" class="form-label">Опции импорта</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="skipExisting" checked>
+                        <label class="form-check-label" for="skipExisting">
+                            Пропускать существующих пользователей
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="updateExisting">
+                        <label class="form-check-label" for="updateExisting">
+                            Обновлять существующих пользователей
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="processImport()">Импортировать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для создания группы -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создание группы пользователей</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="groupName" class="form-label">Название группы</label>
+                    <input type="text" class="form-control" id="groupName" placeholder="VIP пользователи">
+                </div>
+                <div class="mb-3">
+                    <label for="groupDescription" class="form-label">Описание</label>
+                    <textarea class="form-control" id="groupDescription" rows="3" placeholder="Описание группы"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="groupUsers" class="form-label">Пользователи (ID через запятую)</label>
+                    <textarea class="form-control" id="groupUsers" rows="3" placeholder="123456789, 987654321"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="createGroup()">Создать группу</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Инициализация тултипов
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Выбор всех пользователей
+function toggleSelectAllUsers() {
+    const selectAll = document.getElementById('selectAllUsers');
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+// Массовые операции
+function bulkAction(action) {
+    const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    if (selectedUsers.length === 0) {
+        showNotification('Выберите пользователей для операции', 'warning');
+        return;
+    }
+    
+    let confirmMessage = '';
+    switch (action) {
+        case 'grant_admin':
+                            confirmMessage = 'Сделать ' + selectedUsers.length + ' пользователей Admin?';
+            break;
+        case 'revoke_admin':
+                            confirmMessage = 'Убрать права Admin у ' + selectedUsers.length + ' пользователей?';
+            break;
+        case 'block':
+            confirmMessage = 'Заблокировать ' + selectedUsers.length + ' пользователей?';
+            break;
+        case 'unblock':
+            confirmMessage = 'Разблокировать ' + selectedUsers.length + ' пользователей?';
+            break;
+    }
+    
+    if (confirm(confirmMessage)) {
+        fetch('/api/users/bulk-action', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: action,
+                user_ids: selectedUsers
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Ошибка операции', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка операции', 'error');
+        });
+    }
+}
+
+// Экспорт пользователей
+function exportUsers() {
+    const currentUrl = new URL(window.location);
+    currentUrl.pathname = '/api/users/export';
+    window.location.href = currentUrl.toString();
+}
+
+// Импорт пользователей
+function importUsers() {
+    const modal = new bootstrap.Modal(document.getElementById('importUsersModal'));
+    modal.show();
+}
+
+// Обработка импорта
+function processImport() {
+    const fileInput = document.getElementById('importFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showNotification('Выберите файл для импорта', 'warning');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('skip_existing', document.getElementById('skipExisting').checked);
+    formData.append('update_existing', document.getElementById('updateExisting').checked);
+    
+    fetch('/api/users/import', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Импортировано ' + data.imported_count + ' пользователей', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('importUsersModal'));
+            modal.hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.message || 'Ошибка импорта', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка импорта', 'error');
+    });
+}
+
+// Создание группы пользователей
+function createUserGroup() {
+    const modal = new bootstrap.Modal(document.getElementById('createGroupModal'));
+    modal.show();
+}
+
+// Создание группы
+function createGroup() {
+    const name = document.getElementById('groupName').value;
+    const description = document.getElementById('groupDescription').value;
+    const users = document.getElementById('groupUsers').value;
+    
+    if (!name.trim()) {
+        showNotification('Введите название группы', 'warning');
+        return;
+    }
+    
+    fetch('/api/users/groups/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: name,
+            description: description,
+            users: users.split(',').map(id => id.trim()).filter(id => id)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Группа создана', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createGroupModal'));
+            modal.hide();
+        } else {
+            showNotification(data.message || 'Ошибка создания группы', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка создания группы', 'error');
+    });
+}
+
+// Просмотр истории действий
+function viewUserHistory() {
+    window.open('/users/history', '_blank');
+}
+
+// Просмотр деталей пользователя
+function viewUserDetails(userId) {
+    fetch('/api/users/' + userId + '/details')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                document.getElementById('userDetailsContent').innerHTML = 
+                    '<div class="text-center">' +
+                        '<h6>Профиль пользователя</h6>' +
+                        '<p class="mb-2">ID: ' + user.id + '</p>' +
+                        '<p class="mb-2">Username: ' + user.username + '</p>' +
+                        '<p class="mb-2">Статус: ' + (user.status ? 'Активен' : 'Заблокирован') + '</p>' +
+                    '</div>';
+                
+                const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+                modal.show();
+            } else {
+                showNotification('Ошибка загрузки данных пользователя', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка загрузки данных', 'error');
+        });
+}
+
+// Редактирование пользователя
+function editUser(userId) {
+    fetch('/api/users/' + userId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editUsername').value = user.username;
+                document.getElementById('editRole').value = user.role;
+                document.getElementById('editStatus').value = user.status ? '1' : '0';
+                
+                const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                modal.show();
+            } else {
+                showNotification('Ошибка загрузки данных пользователя', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка загрузки данных', 'error');
+        });
+}
+
+// Сохранение пользователя
+function saveUser() {
+    const userId = document.getElementById('editUserId').value;
+    const username = document.getElementById('editUsername').value;
+    const role = document.getElementById('editRole').value;
+    const status = document.getElementById('editStatus').value === '1';
+    
+    fetch('/api/users/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            username: username,
+            role: role,
+            status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Пользователь обновлен', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+            modal.hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.message || 'Ошибка обновления', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка обновления', 'error');
+    });
+}
+
+// Изменение роли пользователя
+function toggleUserRole(userId, currentRole) {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+            const confirmMessage = 'Изменить роль пользователя на "' + (newRole === 'admin' ? 'Admin' : 'Пользователь') + '"?';
+    
+    if (confirm(confirmMessage)) {
+        fetch('/api/users/role', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                role: newRole
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Роль пользователя изменена', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Ошибка изменения роли', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка изменения роли', 'error');
+        });
+    }
+}
+
+// Изменение статуса пользователя
+function toggleUserStatus(userId, currentStatus) {
+    const newStatus = !currentStatus;
+    const action = newStatus ? 'разблокировать' : 'заблокировать';
+    
+    if (confirm('Вы уверены, что хотите ' + action + ' этого пользователя?')) {
+        fetch('/api/users/status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Пользователь ' + action, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Ошибка изменения статуса', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка изменения статуса', 'error');
+        });
+    }
+}
+</script>
+{% endblock %} 

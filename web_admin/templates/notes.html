@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+
+{% block title %}Заметки - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Заголовок и поиск -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-sticky-note"></i> Управление заметками
+                        </h4>
+                    </div>
+                    <div class="col-md-6">
+                        <form class="d-flex" method="GET">
+                            <input type="text" class="form-control me-2" name="search" 
+                                   placeholder="Поиск по тексту заметки..." value="{{ search }}">
+                            <select class="form-select me-2" name="user_id">
+                                <option value="">Все пользователи</option>
+                                {% for user in users %}
+                                <option value="{{ user[0] }}" {% if selected_user|string == user[0]|string %}selected{% endif %}>
+                                    {{ user[3] or ("user" + user[0]|string) }} ({{ user[0] }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика заметок -->
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h5>Всего заметок</h5>
+                        <h3>{{ stats.total_notes }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h5>Активных пользователей</h5>
+                        <h3>{{ stats.active_users }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5>Заметок сегодня</h5>
+                        <h3>{{ stats.notes_today }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h5>Среднее на пользователя</h5>
+                        <h3>{{ "%.1f"|format(stats.avg_notes) }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица заметок -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list"></i> Список заметок
+                        </h5>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-success" onclick="exportNotes()">
+                            <i class="fas fa-download"></i> Экспорт
+                        </button>
+                        {% if current_user.role == 'main_admin' %}
+                        <button class="btn btn-danger" onclick="bulkDelete()">
+                            <i class="fas fa-trash"></i> Массовое удаление
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if notes %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="notesTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>ID</th>
+                                <th>Пользователь</th>
+                                <th>Текст заметки</th>
+                                <th>Дата создания</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for note in notes %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="note-checkbox" value="{{ note[1] }}">
+                                </td>
+                                <td>
+                                    <code>{{ note[1] }}</code>
+                                </td>
+                                <td>
+                                    <a href="#" onclick="viewUserDetails('{{ note[0] }}')">
+                                        {{ note[4] or ("user" + note[0]|string) }}
+                                    </a>
+                                    <br><small class="text-muted">ID: {{ note[0] }}</small>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 300px;" 
+                                         title="{{ note[2] }}">
+                                        {{ note[2] }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ note[3] }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary view-note-btn" 
+                                                data-note-id="{{ note[1] }}" data-note-text="{{ note[2] }}" data-user-id="{{ note[0] }}"
+                                                data-bs-toggle="tooltip" title="Просмотр">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-warning edit-note-btn" 
+                                                data-note-id="{{ note[1] }}" data-note-text="{{ note[2] }}"
+                                                data-bs-toggle="tooltip" title="Редактировать">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% if current_user.role == 'main_admin' %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-note-btn" 
+                                                data-note-id="{{ note[1] }}" data-user-id="{{ note[0] }}"
+                                                data-bs-toggle="tooltip" title="Удалить">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Пагинация -->
+                {% if pagination.pages > 1 %}
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.page - 1 }}{% if search %}&search={{ search }}{% endif %}{% if selected_user %}&user_id={{ selected_user }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Предыдущая
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for p in range(1, pagination.pages + 1) %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}{% if selected_user %}&user_id={{ selected_user }}{% endif %}">
+                                {{ p }}
+                            </a>
+                        </li>
+                        {% endfor %}
+
+                        {% if pagination.page < pagination.pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.page + 1 }}{% if search %}&search={{ search }}{% endif %}{% if selected_user %}&user_id={{ selected_user }}{% endif %}">
+                                Следующая <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-sticky-note fa-3x mb-3"></i>
+                    <p>Заметки не найдены</p>
+                    {% if search or selected_user %}
+                    <p>Попробуйте изменить параметры поиска</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для просмотра заметки -->
+<div class="modal fade" id="viewNoteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Просмотр заметки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>ID заметки:</strong>
+                        <p id="noteId"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Пользователь:</strong>
+                        <p id="noteUser"></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <strong>Текст заметки:</strong>
+                        <div class="border rounded p-3 bg-secondary" id="noteText"></div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <strong>Дата создания:</strong>
+                        <p id="noteDate"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Длина текста:</strong>
+                        <p id="noteLength"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-warning" onclick="editCurrentNote()">Редактировать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования заметки -->
+<div class="modal fade" id="editNoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование заметки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editNoteId">
+                <div class="mb-3">
+                    <label for="editNoteText" class="form-label">Текст заметки</label>
+                    <textarea class="form-control" id="editNoteText" rows="5" maxlength="4000"></textarea>
+                    <div class="form-text">
+                        <span id="charCount">0</span>/4000 символов
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveNote()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для подтверждения удаления -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение удаления</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить эту заметку?</p>
+                <p><strong>ID:</strong> <span id="deleteNoteId"></span></p>
+                <p><strong>Пользователь:</strong> <span id="deleteNoteUser"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentNoteId = null;
+let currentUserId = null;
+
+// Инициализация тултипов и обработчиков событий
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Счетчик символов
+    document.getElementById('editNoteText').addEventListener('input', function() {
+        const count = this.value.length;
+        document.getElementById('charCount').textContent = count;
+    });
+    
+    // Обработчики для кнопок заметок
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.view-note-btn')) {
+            const btn = e.target.closest('.view-note-btn');
+            const noteId = btn.dataset.noteId;
+            const noteText = btn.dataset.noteText;
+            const userId = btn.dataset.userId;
+            viewNote(noteId, noteText, userId);
+        }
+        
+        if (e.target.closest('.edit-note-btn')) {
+            const btn = e.target.closest('.edit-note-btn');
+            const noteId = btn.dataset.noteId;
+            const noteText = btn.dataset.noteText;
+            editNote(noteId, noteText);
+        }
+        
+        if (e.target.closest('.delete-note-btn')) {
+            const btn = e.target.closest('.delete-note-btn');
+            const noteId = btn.dataset.noteId;
+            const userId = btn.dataset.userId;
+            deleteNote(noteId, userId);
+        }
+    });
+});
+
+// Выбор всех заметок
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.note-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+// Экспорт заметок
+function exportNotes() {
+    const currentUrl = new URL(window.location);
+    currentUrl.pathname = '/api/notes/export';
+    window.location.href = currentUrl.toString();
+}
+
+// Массовое удаление
+function bulkDelete() {
+    const selectedNotes = Array.from(document.querySelectorAll('.note-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    if (selectedNotes.length === 0) {
+        showNotification('Выберите заметки для удаления', 'warning');
+        return;
+    }
+    
+    if (confirm('Вы уверены, что хотите удалить ' + selectedNotes.length + ' заметок?')) {
+        fetch('/api/notes/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({note_ids: selectedNotes})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Удалено ' + data.deleted_count + ' заметок', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Ошибка удаления', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка удаления', 'error');
+        });
+    }
+}
+
+// Просмотр заметки
+function viewNote(noteId, noteText, userId) {
+    currentNoteId = noteId;
+    currentUserId = userId;
+    
+    document.getElementById('noteId').textContent = noteId;
+    document.getElementById('noteText').textContent = noteText;
+    document.getElementById('noteLength').textContent = noteText.length + ' символов';
+    
+    // Получаем информацию о пользователе
+    fetch('/api/users/' + userId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('noteUser').textContent = data.user.username || 'user' + userId;
+                document.getElementById('noteDate').textContent = data.user.created_at || 'Неизвестно';
+            }
+        });
+    
+    const modal = new bootstrap.Modal(document.getElementById('viewNoteModal'));
+    modal.show();
+}
+
+// Редактирование заметки
+function editNote(noteId, noteText) {
+    currentNoteId = noteId;
+    
+    document.getElementById('editNoteId').value = noteId;
+    document.getElementById('editNoteText').value = noteText;
+    document.getElementById('charCount').textContent = noteText.length;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editNoteModal'));
+    modal.show();
+}
+
+// Редактирование текущей заметки
+function editCurrentNote() {
+    const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewNoteModal'));
+    viewModal.hide();
+    
+    // Получаем текст заметки
+    const noteText = document.getElementById('noteText').textContent;
+    editNote(currentNoteId, noteText);
+}
+
+// Сохранение заметки
+function saveNote() {
+    const noteId = document.getElementById('editNoteId').value;
+    const noteText = document.getElementById('editNoteText').value;
+    
+    if (!noteText.trim()) {
+        showNotification('Текст заметки не может быть пустым', 'warning');
+        return;
+    }
+    
+    fetch('/api/notes/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            note_id: noteId,
+            note_text: noteText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Заметка обновлена', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editNoteModal'));
+            modal.hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.message || 'Ошибка обновления', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка обновления', 'error');
+    });
+}
+
+// Удаление заметки
+function deleteNote(noteId, userId) {
+    currentNoteId = noteId;
+    currentUserId = userId;
+    
+    document.getElementById('deleteNoteId').textContent = noteId;
+    
+    // Получаем информацию о пользователе
+    fetch('/api/users/' + userId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('deleteNoteUser').textContent = data.user.username || 'user' + userId;
+            }
+        });
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+}
+
+// Подтверждение удаления
+function confirmDelete() {
+    fetch('/api/notes/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            note_id: currentNoteId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Заметка удалена', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+            modal.hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.message || 'Ошибка удаления', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка удаления', 'error');
+    });
+}
+
+// Просмотр деталей пользователя
+function viewUserDetails(userId) {
+    window.open('/users?search=' + userId, '_blank');
+}
+</script>
+{% endblock %} 

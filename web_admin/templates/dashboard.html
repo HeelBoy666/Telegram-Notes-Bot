@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Статус бота -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-robot"></i> Статус бота
+                        </h5>
+                        <small class="text-muted">Последнее обновление: <span id="last-update">{{ "сейчас" }}</span></small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <span class="badge bg-{{ 'success' if bot_status == 'running' else 'danger' }} fs-6">
+                            <i class="fas fa-circle"></i> 
+                            {{ 'Онлайн' if bot_status == 'running' else 'Офлайн' }}
+                        </span>
+                        <div class="btn-group ms-2" role="group">
+                            <button type="button" class="btn btn-sm btn-success" onclick="controlBot('start')">
+                                <i class="fas fa-play"></i> Запустить
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="controlBot('stop')">
+                                <i class="fas fa-stop"></i> Остановить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> Время работы: 
+                            <span id="bot-uptime">{{ "Неизвестно" }}</span>
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">
+                            <i class="fas fa-database"></i> База данных: 
+                            <span id="db-status">{{ "Подключена" }}</span>
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">
+                            <i class="fas fa-sync"></i> Обновления: 
+                            <span id="update-status">{{ "Автоматически" }}</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика пользователей -->
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Всего пользователей</h6>
+                        <h2 class="mb-0" id="total-users">{{ stats.total_users or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Обычные пользователи</h6>
+                        <h2 class="mb-0" id="regular-users">{{ stats.regular_users or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Admin</h6>
+                        <h2 class="mb-0" id="admin-users">{{ stats.admin_users or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-shield fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Главные админы</h6>
+                        <h2 class="mb-0" id="boss-users">{{ stats.boss_users or 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-crown fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика событий -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar"></i> Статистика событий
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-primary" id="total-events">{{ stats.total_events or 0 }}</h3>
+                            <p class="text-muted">Всего событий</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-success" id="events-24h">{{ stats.events_24h or 0 }}</h3>
+                            <p class="text-muted">За 24 часа</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика рефералов -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-share-alt"></i> Реферальная система
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-info" id="total-referrals">{{ stats.total_referrals or 0 }}</h3>
+                            <p class="text-muted">Всего рефералов</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-warning" id="unique-referrers">{{ stats.unique_referrers or 0 }}</h3>
+                            <p class="text-muted">Уникальных рефереров</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрые действия -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt"></i> Быстрые действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary w-100" onclick="openSendMessageModal()">
+                            <i class="fas fa-paper-plane"></i> Отправить сообщение
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-success w-100" onclick="refreshStats()">
+                            <i class="fas fa-sync"></i> Обновить статистику
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="viewSystemInfo()">
+                            <i class="fas fa-info-circle"></i> Информация о системе
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-warning w-100" onclick="testConnection()">
+                            <i class="fas fa-network-wired"></i> Тест подключения
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние события -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list"></i> Последние события
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_events %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Описание</th>
+                                <th>Пользователь</th>
+                                <th>Важность</th>
+                                <th>Время</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in recent_events %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary">{{ event[0] }}</span>
+                                </td>
+                                <td>{{ event[1] }}</td>
+                                <td>
+                                    {% if event[2] %}
+                                        {% if event[5] %}
+                                            <span class="user-link" data-bs-toggle="popover" data-bs-trigger="hover" 
+                                                  data-user-id="{{ event[2] }}" data-username="{{ event[5] }}"
+                                                  data-bs-html="true"
+                                                  data-bs-content="<div class='user-popover'><div class='user-avatar'><i class='fas fa-user-circle fa-2x'></i></div><div class='user-info'><strong>{{ event[5] }}</strong><br><small class='text-muted'>ID: {{ event[2] }}</small><br><small class='text-primary'>👆 Нажмите для подробного профиля</small><br><small class='text-info'>📊 Статистика • 📝 Заметки • 👥 Рефералы</small></div></div>">
+                                                <i class="fas fa-user-circle me-1"></i>{{ event[5] }}
+                                            </span>
+                                        {% else %}
+                                            <span class="user-link" data-bs-toggle="popover" data-bs-trigger="hover" 
+                                                  data-user-id="{{ event[2] }}" data-username="user{{ event[2] }}"
+                                                  data-bs-html="true"
+                                                  data-bs-content="<div class='user-popover'><div class='user-avatar'><i class='fas fa-user-circle fa-2x'></i></div><div class='user-info'><strong>user{{ event[2] }}</strong><br><small class='text-muted'>ID: {{ event[2] }}</small><br><small class='text-warning'>⚠️ Без username</small><br><small class='text-primary'>👆 Нажмите для подробного профиля</small><br><small class='text-info'>📊 Статистика • 📝 Заметки • 👥 Рефералы</small></div></div>">
+                                                <i class="fas fa-user-circle me-1"></i>user{{ event[2] }}
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted"><i class="fas fa-cog me-1"></i>Система</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if event[3] == 'info' %}
+                                        <span class="badge bg-info">Информация</span>
+                                    {% elif event[3] == 'warning' %}
+                                        <span class="badge bg-warning">Предупреждение</span>
+                                    {% elif event[3] == 'error' %}
+                                        <span class="badge bg-danger">Ошибка</span>
+                                    {% elif event[3] == 'critical' %}
+                                        <span class="badge bg-dark">Критично</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ event[3] }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ event[4] }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>Пока нет событий</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для отправки сообщения -->
+<div class="modal fade" id="sendMessageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Отправить сообщение</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="messageUserId" class="form-label">ID пользователя</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="messageUserId" placeholder="Введите ID пользователя">
+                        <button class="btn btn-outline-secondary" type="button" onclick="setMyId()">Мой ID</button>
+                        <button class="btn btn-outline-warning" type="button" onclick="sendToAll()">Всем</button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="messageText" class="form-label">Сообщение</label>
+                    <textarea class="form-control" id="messageText" rows="3" placeholder="Введите текст сообщения"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function controlBot(action) {
+    fetch('/api/bot/status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({action: action})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message || 'Бот успешно ' + (action === 'start' ? 'запущен' : 'остановлен'), 'success');
+            
+            // Обновляем статус бота
+            updateBotStatus(data.status);
+            
+            // Обновляем статистику через 2 секунды
+            setTimeout(() => {
+                updateRealtimeStats();
+            }, 2000);
+        } else {
+            showNotification(data.message || 'Ошибка при управлении ботом', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при управлении ботом', 'error');
+    });
+}
+
+// Быстрые действия
+
+function openSendMessageModal() {
+    const modal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+    document.getElementById('messageUserId').value = '';
+    document.getElementById('messageText').value = '';
+    modal.show();
+}
+
+function sendMessage() {
+    const userId = document.getElementById('messageUserId').value;
+    const message = document.getElementById('messageText').value;
+    
+    if (!userId || !message) {
+        showNotification('Заполните все поля', 'warning');
+        return;
+    }
+    
+    sendMessageToUser(userId, message);
+    
+    // Закрываем модальное окно
+    const modal = bootstrap.Modal.getInstance(document.getElementById('sendMessageModal'));
+    modal.hide();
+}
+
+function setMyId() {
+    // Получаем ID текущего пользователя из сессии
+    fetch('/api/user/current')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('messageUserId').value = data.user_id;
+                showNotification('ID пользователя установлен', 'success');
+            } else {
+                showNotification('Не удалось получить ID пользователя', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка получения ID пользователя', 'error');
+        });
+}
+
+function sendToAll() {
+    const message = document.getElementById('messageText').value;
+    
+    if (!message) {
+        showNotification('Введите текст сообщения', 'warning');
+        return;
+    }
+    
+    if (confirm('Отправить сообщение ВСЕМ пользователям? Это действие нельзя отменить.')) {
+        fetch('/api/bot/send-message-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: message
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('sendMessageModal'));
+                modal.hide();
+            } else {
+                showNotification(data.message || 'Ошибка отправки сообщения', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка отправки сообщения', 'error');
+        });
+    }
+}
+
+function refreshStats() {
+    updateRealtimeStats();
+    showNotification('Статистика обновлена', 'success');
+}
+
+function viewSystemInfo() {
+    fetch('/api/system/info')
+        .then(response => response.json())
+        .then(data => {
+            const info = `Информация о системе:\n\n` +
+                        `Размер БД: ${data.db_size}\n` +
+                        `Время работы: ${data.uptime}\n` +
+                        `CPU: ${data.system?.cpu_percent || 'N/A'}%\n` +
+                        `Память: ${data.system?.memory_percent || 'N/A'}%\n` +
+                        `Диск: ${data.system?.disk_percent || 'N/A'}%`;
+            alert(info);
+        })
+        .catch(error => {
+            showNotification('Ошибка получения информации о системе', 'error');
+        });
+}
+
+function testConnection() {
+    fetch('/api/system/test-connection')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Подключение к базе данных успешно', 'success');
+            } else {
+                showNotification('Ошибка подключения к базе данных', 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Ошибка тестирования подключения', 'error');
+        });
+}
+
+// Автообновление статистики каждые 30 секунд
+setInterval(function() {
+    fetch('/api/stats')
+    .then(response => response.json())
+    .then(data => {
+        // Обновляем статистику на странице
+        updateStatsCards(data);
+    })
+    .catch(error => console.error('Error updating stats:', error));
+}, 30000);
+</script>
+{% endblock %} 
